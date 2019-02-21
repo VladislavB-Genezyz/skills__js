@@ -1,0 +1,172 @@
+	const gulp = require('gulp');
+	const browserSync = require('browser-sync').create();
+	const pug = require('gulp-pug');
+	const sass = require('gulp-sass');
+	const spritesmith = require('gulp.spritesmith');
+	const rimraf = require('rimraf');
+	const rename = require('gulp-rename');
+	const coffeScript = require('gulp-coffee');
+	const autoprefixer = require('gulp-autoprefixer');
+	const cleanCSS = require('gulp-clean-css');
+	const babel = require('gulp-babel');
+	const eslint = require('gulp-eslint');
+	const imagemin = require('gulp-imagemin');
+
+	/*********************** Variables with source ****************/
+
+	let
+		the_pug = {
+			in : "source/template/*.pug",
+			watch : "source/template/**/*.pug",
+			out : "build/"
+		},
+		css = {
+			in : "source/styles/*.sass",
+			watch : "source/styles/**/*.sass",
+			out : "build/styles/"
+
+		},
+		js = {
+			in : "source/js/**/*.js",
+			out : "build/js/"
+		}
+		img = {
+			in : "source/images/**/*.*",
+			out : "build/images/"
+
+		},
+		coffeScr = {
+			in: "source/js/**/*.coffe",
+			out: "build/"
+		}
+		fonts = {
+			in : "source/fonts/**/*.*",
+			out : "build/fonts/"
+		};
+
+
+	/* -------- Server -------- */
+	gulp.task('server', function() {
+		browserSync.init({
+			server: {
+				port: 9000,
+				baseDir: "build"
+			}
+		});
+		//
+		gulp.watch('build/**/*').on('change', browserSync.reload);
+	});
+
+
+	/* ------------ Pug compile ------------- */
+	gulp.task('templates:compile', function buildHTML() {
+		return gulp.src(the_pug.in)
+				.pipe(pug({
+					pretty: true
+				}))
+			.pipe(gulp.dest(the_pug.out))
+	});
+
+
+	/* ------------ Styles compile ------------- */
+	gulp.task('styles:compile', function () {
+
+		return gulp.src(css.in)
+				.pipe(sass({
+					outputStyle: 'compressed',
+					includePaths: require('node-normalize-scss').includePaths
+				})
+				.on('error', sass.logError))
+				.pipe(autoprefixer({
+					browsers: ['last 4 versions'],
+					cascade: false
+				}))
+				.pipe(rename('main.min.css'))
+				.pipe(gulp.dest(css.out));
+	});
+
+	/*--------------JS----------------- */
+	gulp.task('babel', () => {
+		return gulp.src(js.in)
+			.pipe(babel({
+				presets: ['@babel/env']
+			}))
+	        .pipe(eslint({
+	        	fix: true,
+				'rules':{
+				    'quotes': [1, 'single'],
+				    'semi': 2,
+				}
+				}))
+
+			.pipe(eslint.format())
+			
+  			// Brick on failure to be super strict
+			.pipe(eslint.failOnError())
+			.pipe(gulp.dest(js.out))
+	});
+
+
+	/* ------------ Sprite ------------- */
+	gulp.task('sprite', function(cb) {
+		const spriteData = gulp.src('source/css/images/icons/*.png').pipe(spritesmith({
+			imgName: 'sprite.png',
+			imgPath: '../images/sprite.png',
+			cssName: 'sprite.scss'
+		}));
+
+		spriteData.img.pipe(gulp.dest('build/images/'));
+		spriteData.css.pipe(gulp.dest('source/styles/global/'));
+		cb();
+	});
+
+	/* ------------ Delete ------------- */
+	gulp.task('clean', function del(cb) {
+		return rimraf('build', cb);
+	});
+
+
+	/* ------------ Copy fonts ------------- */
+	gulp.task('copy:fonts', function() {
+		return gulp.src(fonts.in)
+		.pipe(gulp.dest(fonts.out));
+	});
+
+
+	/* ------------ Copy images ------------- */
+	gulp.task('copy:images', function() {
+		return gulp.src(img.in)
+					.pipe(imagemin())
+					.pipe(gulp.dest(img.out));
+	});
+
+
+
+	/*---------------Coffe - Script---------*/
+	gulp.task('coffeScript:compile',function(){
+		return gulp.src('source/js/**/*.coffee')
+			.pipe(coffeScript({bare: true}))
+			.pipe(gulp.dest('build/js'))
+	})
+
+
+	/* ------------ Copy ------------- */
+	gulp.task('copy', gulp.parallel('copy:fonts', 'copy:images'));
+
+
+	/* ------------ Watchers ------------- */
+	gulp.task('watch', function() {
+		gulp.watch(the_pug.watch, gulp.series('templates:compile'));
+		gulp.watch(css.watch, gulp.series('styles:compile'));
+		gulp.watch(js.in, gulp.series('babel'));
+		gulp.watch('source/js/**/*.coffee' , gulp.series('coffeScript:compile'));
+	});
+
+	/* ------------- Default ------------- */
+	gulp.task('default', gulp.series(
+		'clean',
+		gulp.parallel('templates:compile', 'styles:compile', 'sprite', 'copy','babel','coffeScript:compile'),
+		gulp.parallel('watch', 'server')
+	)
+);
+
