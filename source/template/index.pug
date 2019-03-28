@@ -1,12 +1,19 @@
 doctype htlm
 html(lang='en')
-	header
+	head
 		title Some Title
 		meta(charset='utf-8')
 		meta(name='viewport', content='width=device-width, initial-scale=1.0')
 		link(rel='stylesheet', href='/styles/main.min.css')
-		script(src='js/main.js')
+		//- script(src='js/workers/main.js')
+		//- script(src='js/workers-example/main.js')
+		script(src="js/usersElements/main.js")
 	body
 		header
+
+
 		main
+			//- include src/workers/index.pug
+			//- include src/workers-example/index.pug
+			include src/usersElement/index.pug
 		footer
