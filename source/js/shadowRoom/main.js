@@ -17,9 +17,9 @@ window.onload = () =>{
 
 
     // прочитать данные из Shadow DOM для elem
-  var root = elem.shadowRoot;
-  // Привет из подполья!
-  document.write("<p>p:" + root.querySelector('p').innerHTML);
-  // пусто, так как физически узлы - вне content
-  document.write("<p>content:" + root.querySelector('content').innerHTML);
+    var root = elem.shadowRoot;
+    // Привет из подполья!
+    document.write("<p>p:" + root.querySelector('p').innerHTML);
+    // пусто, так как физически узлы - вне content
+    document.write("<p>content:" + root.querySelector('content').innerHTML);
 }
